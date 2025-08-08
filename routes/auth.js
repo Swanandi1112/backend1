@@ -7,7 +7,7 @@ const user= require("../model/User");
 
 // Register route
 router.post("/register", async (req , res) => {
-  const { email , password } = req.body;
+  const { email , password,username } = req.body;
 
   const existingUser = users.find(user => user.email === email);
   if (existingUser) {
@@ -15,7 +15,7 @@ router.post("/register", async (req , res) => {
   } 
 
   const hashedPassword = await bcrypt.hash(password, 10);
-  users.push({ email , password: hashedPassword });
+  users.push({ email , password: hashedPassword ,username});
 
   res.json({ msg: "User registered successfully" });
 });
@@ -37,4 +37,15 @@ router.post("/login", async (req, res) => {
   res.json({ msg: "Login successful" });
 });
 
+router.get("/id", async(req, res)=>{
+    try{ 
+const users = await User.find();
+    res.json(users);
+  }
+
+catch(error){
+res.status(500).json({error:"Error getting user"});
+}
+});
+)
 module.exports = router;
