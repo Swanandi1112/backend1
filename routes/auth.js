@@ -3,9 +3,7 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 
 const router = express.Router();
-
-// In-memory user array (simulate a database)
-const users = [];
+const user= require("../model/User");
 
 // Register route
 router.post("/register", async (req , res) => {
