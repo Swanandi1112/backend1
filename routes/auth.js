@@ -37,15 +37,5 @@ router.post("/login", async (req, res) => {
   res.json({ msg: "Login successful" });
 });
 
-router.get("/id", async(req, res)=>{
-    try{ 
-const users = await User.find();
-    res.json(users);
-  }
 
-catch(error){
-res.status(500).json({error:"Error getting user"});
-}
-});
-)
 module.exports = router;
