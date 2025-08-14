@@ -1,75 +1,98 @@
-// routes/auth.js
 const express = require("express");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const User = require("../model/User"); // Mongoose model
-
 const router = express.Router();
+const User = require("../models/User"); // Import your Mongoose User model
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
-// Secret for JWT
-const JWT_SECRET = "your_jwt_secret"; // Change this to env variable in production
+// ======================
+// USER SIGNUP
+// ======================
+router.post("/signup", async (req, res) => {
+    try {
+        const { username, email, password } = req.body;
 
-// Register route
-router.post("/register", async (req, res) => {
-  try {
-    const { email, password, username } = req.body;
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: "User already exists" });
+        }
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ msg: "User already exists" });
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Save new user
+        const newUser = new User({
+            username,
+            email,
+            password: hashedPassword
+        });
+
+        await newUser.save();
+
+        res.status(201).json({ message: "User created successfully" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new User({
-      email,
-      password: hashedPassword,
-      username
-    });
-    await newUser.save();
-
-    res.json({ msg: "User registered successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: "Server error" });
-  }
 });
 
-// Login route
+// ======================
+// USER LOGIN
+// ======================
 router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+    try {
+        const { email, password } = req.body;
 
-    const existingUser = await User.findOne({ email });
-    if (!existingUser) {
-      return res.status(400).json({ msg: "User not found" });
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+
+        // Generate JWT
+        const token = jwt.sign(
+            { id: user._id, username: user.username, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: "1d" }
+        );
+
+        res.json({
+            token,
+            id: user._id,
+            username: user.username,
+            email: user.email
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
     }
+});
 
-    const isMatch = await bcrypt.compare(password, existingUser.password);
-    if (!isMatch) {
-      return res.status(400).json({ msg: "Invalid credentials" });
+// ======================
+// GET USER BY ID
+// ======================
+router.get("/users/:id", async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const user = await User.findById(userId).select("_id username email");
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({
+            id: user._id,
+            username: user.username,
+            email: user.email
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
     }
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: User._id, email: User.email },
-      JWT_SECRET,
-      { expiresIn: "7d" } // token valid for 7 days
-    );
-
-    // Send token and user info to Android
-    res.json({
-      msg: "Login successful",
-      token: token,
-      email: User.email,
-      username: User.username
-      id: User._id
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: "Server error" });
-  }
 });
 
 module.exports = router;
-
