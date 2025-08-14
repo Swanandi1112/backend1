@@ -4,7 +4,7 @@ const User = require("../models/User");
 const router = express.Router();
 // Register
 router.post("/register", async (req, res) => {
-  const { name, email, password } = req.body;
+  const { username, email, password } = req.body;
   if (!name || !email || !password)
     return res.status(400).json({ msg: "All fields required." });
 
@@ -13,11 +13,11 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ msg: "User exists." });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await new User({ name, email, password: hashedPassword }).save();
+    const newUser = await new User({ username, email, password: hashedPassword }).save();
 
     res.status(201).json({
       userId: newUser._id,
-      name: newUser.name,
+      username: newUser.name,
       email: newUser.email,
       msg: "Registered successfully"
     });
