@@ -43,6 +43,22 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.post("/signup", async (req, res) => {
+  const { username,email, password } = req.body;
+  if (!username ||!email || !password) return res.status(400).json({ msg: "All fields required." });
+
+  try {
+        const user = await User.findOne({ username });
+
+    const user = await User.findOne({ email });
+    if (!user || !(await bcrypt.compare(password, user.password)))
+      return res.status(400).json({ msg: "Invalid credentials." });
+
+    res.status(200).json({ msg: "signup successful", user: { id: user._id, name: user.name } });
+  } catch (err) {
+    res.status(500).json({ msg: "Server error." });
+  }
+});
 // Get User ID
 router.get("/user-id", async (req, res) => {
   const { email } = req.query;
